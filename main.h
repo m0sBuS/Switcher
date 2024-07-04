@@ -28,7 +28,9 @@ extern uint16_t Braking;
 static uint8_t TestCnt = 0; 
 static uint8_t PacketCNT = 0, PrevPacket = 0;
 
-static uint8_t CANGearPosition100ms = 0;
+static uint8_t CAN50ms = 3;
+static uint8_t CAN100ms = 0;
+static uint16_t CANGearPosition100ms = 0;
 static uint16_t CANReversePacket2s = 5;
 
 extern bool HardReset;

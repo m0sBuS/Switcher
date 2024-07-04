@@ -35,16 +35,9 @@ int main(void)
 	GB_Init();															//Gearbox configuration
 	CAN_Init();															//CAN-buses configuration
 	MS_Timer_Init();												//One millisecond timer timer configuration
-	
+	GB_Position();
 	if((GPIOD->IDR & 0x1E00) == UNDEFINED)	//Checking gearbox position if position undefined
-	{
-		GB_Request = DRIVE;										//Switching gearbox to DRIVE
-		Braking = 1;													
-		GPIOD->ODR &= ~GPIO_ODR_OD4;
-		TIM12->CCR1 = 0;
-		TIM12->CCR2 = PARKING_PWM;
-		GPIOD->ODR |= GPIO_ODR_OD5;
-	}
+		GB_Request = PARKING;										//Switching gearbox to PARKING
 	while(1)
 	{
 		__WFI();
@@ -84,7 +77,11 @@ void MS_Timer_Init(void)
 void TIM1_BRK_TIM9_IRQHandler(void)
 {
 	TIM9->SR = 0;
-	GB_Braking();
+//	GB_Braking();
+	GB_Position();
+	GB_CANRequest();
+	CAN50ms++;
+	CAN100ms++;
 	CANGearPosition100ms++;
 	CANReversePacket2s++;
 	if (CANGearPosition100ms == 100)
@@ -95,6 +92,11 @@ void TIM1_BRK_TIM9_IRQHandler(void)
 			CANGearPosition100ms = 0;
 		}		
 	}
+	if (CAN100ms == 100)
+	{
+		if (HardReset == 1)
+			CAN100ms = 0;
+	}
 	if (CANReversePacket2s == 2000)
 	{
 		if (!startPump)
@@ -104,16 +106,21 @@ void TIM1_BRK_TIM9_IRQHandler(void)
 		}
 		CANReversePacket2s = 0;
 	}
-	if (CANGearPosition100ms == 80 && HardReset == 1)
-		CAN_Message_Send(0);
-	if (CANGearPosition100ms == 70 && HardReset == 1)
+	if (CANReversePacket2s == 1000)
+		CAN_Message_Send(9);
+//	if (CAN100ms == 80 && HardReset == 1)
+//		CAN_Message_Send(0);
+	if (CAN100ms == 70 && HardReset == 1)
 		CAN_Message_Send(4);
-	if (CANGearPosition100ms == 60 && HardReset == 1)
+	if (CAN100ms == 60 && HardReset == 1)
 		BMW_CAN_Message_Send(5, 0x7A, 0x7);
-	if (CANGearPosition100ms == 50 && HardReset == 1)
+	if (CAN50ms == 50 && HardReset == 1)
+	{
 		BMW_CAN_Message_Send(6, 0x9F, 0x7);
-	if (CANGearPosition100ms == 40 && HardReset == 1)
+		CAN50ms = 0;
+	}
+	if (CAN100ms == 40 && HardReset == 1)
 		BMW_CAN_Message_Send(7, 0xF1, 0x7);
-	if (CANGearPosition100ms == 30 && HardReset == 1)
+	if (CAN100ms == 30 && HardReset == 1)
 		BMW_CAN_Message_Send(8, 0xB2, 0x3);
 }

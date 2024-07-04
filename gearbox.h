@@ -9,10 +9,10 @@
 #define S_POS				GPIO_IDR_ID13
 #define BREAK_POS		GPIO_IDR_ID8
 
-#define PARKING_PWM	(uint32_t)2840
-#define SWITCH_PWM	(uint32_t)1500
+#define PARKING_PWM	(uint32_t)3150
+#define SWITCH_PWM	(uint32_t)2500
 #define BRAKE_DELAY	(uint16_t)100				//Count milliseconds dynamic braking delay
-#define BRAKE_PWM		(uint32_t)900				//Reverse PWM brake ratio
+#define BRAKE_PWM		(uint32_t)0				//Reverse PWM brake ratio
 
 enum GB_Pos_enum{
 	UNDEFINED = 0,
@@ -31,6 +31,7 @@ void CAN_GBPos(enum GB_Pos_enum GB_Pos);
 void EXTI9_5_IRQHandler(void);
 void EXTI15_10_IRQHandler(void);
 
+static enum GB_Pos_enum GB_PrevStatus = UNDEFINED;
 static enum GB_Pos_enum GB_Status = UNDEFINED;
 static enum GB_Pos_enum GB_Request = PARKING;
 

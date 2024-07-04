@@ -132,6 +132,12 @@ void CAN_Init(void)
 	CAN_TxMessage[3].DATA[0] = 0x5E;
 	CAN_TxMessage[3].DATA[1] = 0xF1;
 	
+	CAN_TxMessage[4].ID_ST = 0x137;
+	//CAN_TxMessage[4].MessageDesc = CAN_TI0R_TXRQ;
+	CAN_TxMessage[4].MessageLen = 0x2;
+	CAN_TxMessage[4].DATA[0] = 0xFD;
+	CAN_TxMessage[4].DATA[1] = 0xFF;
+	
 //Rough RPM packet 
 	CAN_TxMessage[5].ID_ST = 0x0F3;
 	//CAN_TxMessage[5].MessageDesc = CAN_TI0R_TXRQ;
@@ -149,9 +155,9 @@ void CAN_Init(void)
 	//CAN_TxMessage[6].MessageDesc = CAN_TI0R_TXRQ;
 	CAN_TxMessage[6].MessageLen = 0x8;
 	CAN_TxMessage[6].DATA[1] = 0xFF;
-	CAN_TxMessage[6].DATA[2] = 0xEC;
-	CAN_TxMessage[6].DATA[3] = 0x00;
-	CAN_TxMessage[6].DATA[4] = 0x00;
+	CAN_TxMessage[6].DATA[2] = 0xE5;
+	CAN_TxMessage[6].DATA[3] = 0x58;
+	CAN_TxMessage[6].DATA[4] = 0x7E;
 	CAN_TxMessage[6].DATA[5] = 0x00;
 	CAN_TxMessage[6].DATA[6] = 0x00;
 	CAN_TxMessage[6].DATA[7] = 0xF1;
@@ -180,14 +186,17 @@ void CAN_Init(void)
 	CAN_TxMessage[8].DATA[6] = 0x01;
 	CAN_TxMessage[8].DATA[7] = 0xF1;	
 	
-// Speed packet (must be removed)
-//	CAN_TxMessage[9].ID_ST = 0x1A1;
+
+	CAN_TxMessage[9].ID_ST = 0x3FB;
 //	//CAN_TxMessage[9].MessageDesc = CAN_TI0R_TXRQ;
-//	CAN_TxMessage[9].MessageLen = 0x5;
-//	CAN_TxMessage[9].DATA[1] = 0xFF;
-//	CAN_TxMessage[9].DATA[2] = 0;
-//	CAN_TxMessage[9].DATA[3] = 0;
-//	CAN_TxMessage[9].DATA[4] = 0x81;	
+	CAN_TxMessage[9].MessageLen = 0x7;
+	CAN_TxMessage[9].DATA[0] = 0xC7;
+	CAN_TxMessage[9].DATA[1] = 0xC9;
+	CAN_TxMessage[9].DATA[2] = 0x01;
+	CAN_TxMessage[9].DATA[3] = 0x10;
+	CAN_TxMessage[9].DATA[4] = 0x01;
+	CAN_TxMessage[9].DATA[5] = 0x4E;
+	CAN_TxMessage[9].DATA[6] = 0xFF;
 }
 
 /* Definition CRC calulation function */
@@ -249,11 +258,13 @@ void CAN1_RX1_IRQHandler(void)
 	if (CAN_RxMessage2[0].ID_ST == 0x2C4)
 	{
 		RPM = (uint16_t)(((CAN_RxMessage2[0].DATA[0] << 8) + CAN_RxMessage2[0].DATA[1]) >> 2) * 3;
+		if (RPM > 0)
+			CAN_TxMessage[4].DATA[1] = 0xFF;
 		RPMBMW = RPM / 2 * 3;
 		CAN_TxMessage[5].DATA[2] = RPMBMW >> 8;		
 		CAN_TxMessage[5].DATA[4] = (uint8_t)RPMBMW;
-		CAN_TxMessage[6].DATA[5] = (uint8_t)RPM >> 6;
-		CAN_TxMessage[6].DATA[6] = (uint8_t)RPM << 2;
+		CAN_TxMessage[6].DATA[6] = (uint16_t)RPM >> 6;
+		CAN_TxMessage[6].DATA[5] = (uint8_t)RPM << 2;
 	}
 }
 
@@ -293,7 +304,7 @@ void CAN2_RX1_IRQHandler(void)
 			uint32_t u32test = *(uint32_t*)((uint32_t)&CAN2->sFIFOMailBox[1] + j);
 			*(uint32_t*)((uint32_t)&CAN_RxMessage[index] + j) = u32test;
 		}
-	*/
+*/
 //This part must be reworked bc using hardreset and undefined messages
 	if (HardReset == 0)
 		CAN_HardReset();
@@ -341,5 +352,8 @@ void CAN2_TX_IRQHandler(void)
 	if (CAN2->TSR & CAN_TSR_TXOK0)
 		CAN2->TSR |= CAN_TSR_RQCP0;
 	else
-		__NOP();
+	{
+		while (CAN2->MSR & CAN_MSR_STATUSMASK);
+			CAN2->sTxMailBox[0].TIR |= CAN_TI0R_TXRQ;	
+	}
 }
